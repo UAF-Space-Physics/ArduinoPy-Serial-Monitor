@@ -14,47 +14,30 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QTextBrowser" name="serialDisplay">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>70</y>
-      <width>761</width>
-      <height>381</height>
-     </rect>
-    </property>
-    <property name="readOnly">
-     <bool>true</bool>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="sendButton">
-    <property name="geometry">
-     <rect>
-      <x>690</x>
-      <y>10</y>
-      <width>91</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>12</pointsize>
-     </font>
-    </property>
-    <property name="text">
-     <string>Send</string>
-    </property>
-   </widget>
-   <widget class="QLineEdit" name="messageLine">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>10</y>
-      <width>661</width>
-      <height>41</height>
-     </rect>
-    </property>
-   </widget>
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="0">
+     <widget class="QLineEdit" name="messageLine"/>
+    </item>
+    <item row="0" column="1">
+     <widget class="QPushButton" name="sendButton">
+      <property name="font">
+       <font>
+        <pointsize>12</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Send</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="0" colspan="2">
+     <widget class="QTextBrowser" name="serialDisplay">
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+   </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -76,18 +59,15 @@
     <property name="title">
      <string>BAUD</string>
     </property>
-    <addaction name="BAUD300"/>
-    <addaction name="BAUD1200"/>
-    <addaction name="BAUD2400"/>
-    <addaction name="BAUD4800"/>
-    <addaction name="BAUD9600"/>
-    <addaction name="BAUD19200"/>
-    <addaction name="BAUD38400"/>
-    <addaction name="BAUD57600"/>
-    <addaction name="BAUD115200"/>
+   </widget>
+   <widget class="QMenu" name="menuPORT">
+    <property name="title">
+     <string>PORT</string>
+    </property>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuBAUD"/>
+   <addaction name="menuPORT"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionClear_Output">
@@ -98,51 +78,6 @@
   <action name="actionQuit">
    <property name="text">
     <string>Quit</string>
-   </property>
-  </action>
-  <action name="BAUD300">
-   <property name="text">
-    <string>300</string>
-   </property>
-  </action>
-  <action name="BAUD1200">
-   <property name="text">
-    <string>1200</string>
-   </property>
-  </action>
-  <action name="BAUD2400">
-   <property name="text">
-    <string>2400</string>
-   </property>
-  </action>
-  <action name="BAUD4800">
-   <property name="text">
-    <string>4800</string>
-   </property>
-  </action>
-  <action name="BAUD9600">
-   <property name="text">
-    <string>9600</string>
-   </property>
-  </action>
-  <action name="BAUD19200">
-   <property name="text">
-    <string>19200</string>
-   </property>
-  </action>
-  <action name="BAUD38400">
-   <property name="text">
-    <string>38400</string>
-   </property>
-  </action>
-  <action name="BAUD57600">
-   <property name="text">
-    <string>57600</string>
-   </property>
-  </action>
-  <action name="BAUD115200">
-   <property name="text">
-    <string>115200</string>
    </property>
   </action>
  </widget>

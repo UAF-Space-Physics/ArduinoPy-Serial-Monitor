@@ -1,17 +1,18 @@
 
-
 class SDevice:
     def __init__(self,port='',baud='',noDevice=False):
         self.__imports__()
-        self.__log__     = Log().logger
+        self.__log__     = self.Log().logger
         self.noDevice = noDevice
 
         if not port and not noDevice: #automatically assign one
             try               :
                 self.device   = self.get_active_ports()[0].device
                 self.__log__.debug(f"Found device at : {self.device}")
-            except IndexError :self.noDevice = True
-        else        : self.device  = port
+            except IndexError :
+                self.noDevice = True
+        else   : 
+            self.device  = port
 
         if self.noDevice : 
             self.__log__.warning("NO DEVICE DETECTED")
@@ -19,12 +20,13 @@ class SDevice:
             self.port          = -1
             self.serial_device = -1
         else:
-            if not baud : self.baud    = '57600'
-            else        : baud         = baud
+            if not baud : self.baud    = 9600
+            else        : self.baud    = baud
 
             self.__log__.debug(f"Initializing Serial Comms on Port:{self.device} at BAUD:{self.baud}")
             self.serial_device = self.connect(self.device,self.baud)
             self.__log__.debug(f"Comms setup complete")
+        print(self.noDevice)
 
     def __imports__(self):
         try     : import serial as s
@@ -39,6 +41,10 @@ class SDevice:
         except  : self.logging = None
         else    : self.logging = logging
 
+        try     : from logg import Log
+        except  : self.Log = None
+        else    : self.Log = Log
+
     def get_active_ports(self):
         if self.noDevice : return 0
         active_ports = self.list_ports.comports()
@@ -50,7 +56,11 @@ class SDevice:
         if self.serial_device.in_waiting : 
             line = self.serial_device.readline().decode().strip("\n").strip("\r")
             lines.append(line)
-        return 
+        return lines
+
+    def reset(self):
+        self.disconnect()
+        self.connect(self.device,self.baud)
         
     def connect(self,device,baud):
         if self.noDevice : return 0
@@ -69,6 +79,14 @@ class SDevice:
     def update_baud(self,baud):
         self.__log__.debug(f"Updating to BAUD: {baud}")
         if self.noDevice : return 0
-        self.disconnect()
-        self.baud = baud
-        self.connect(self.device,self.baud)
+        self.baud                   = baud
+        self.serial_device.baudrate = self.baud
+        #self.reset()
+
+    def update_port(self,port):
+        self.__log__.debug(f"Updating to PORT: {port}")
+        if self.noDevice : return 0
+        self.device             = port    
+        self.serial_device.port = self.device
+        #self.reset()
+        

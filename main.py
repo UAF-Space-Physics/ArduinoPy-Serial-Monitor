@@ -2,7 +2,7 @@
 import sys
 
 import serialWindow    as     sw
-from   PyQt5           import QtCore
+from   PyQt5           import QtCore,QtWidgets
 from   PyQt5.QtWidgets import QApplication, QMainWindow
 
 from logg import Log
@@ -49,10 +49,11 @@ class MainWindow(QMainWindow, sw.Ui_MainWindow):
         self.__log__.debug("Initializing the Main Window")
         super(MainWindow,self).__init__()
         self.setupUi(self)
+        self.__imports__()
 
         self.__log__.debug("Initializing Serial Comms")
         self.serialOutput  = []
-        self.SDevice       = self.SDevice()
+        self.SDevice       = self.SerialDeviceLib()
         self.serial_device = self.SDevice.serial_device
 
         self.__log__.debug("Setting GUI hooks")
@@ -61,34 +62,61 @@ class MainWindow(QMainWindow, sw.Ui_MainWindow):
 
     def __imports__(self):
         try        : from serial_comms import SDevice
-        except     : self.SDevice = None
-        else       : self.SDevice = SDevice
+        except     : self.SerialDeviceLib = None
+        else       : self.SerialDeviceLib = SDevice
 
-    def __set_hooks__(self,pollIntervalMS=150):
+    def __set_hooks__(self,pollIntervalMS=150,barUpdateInvervalMS=500):
         self.__log__.debug("Setting up callback on return-key press for message line")
         self.messageLine.returnPressed.connect(self.send_message)
         self.__log__.debug("Setting up callback on send button press for message line")
         self.sendButton.pressed.connect(self.send_message)
         
         self.__log__.debug("Firing off a timer for polling the serial buffer")
-        self.timer = QtCore.QTimer()
-        self.timer.timeout.connect(self.check_messages)
-        self.timer.start(pollIntervalMS)
+        self.poll_timer = QtCore.QTimer()
+        self.poll_timer.timeout.connect(self.check_messages)
+        self.poll_timer.start(pollIntervalMS)
 
-        self.__log__.debug("Hooking drop-down menu items to thei respective functions")
+        self.__log__.debug("Firing off a timer for updating the status bar")
+        self.bar_timer = QtCore.QTimer()
+        self.bar_timer.timeout.connect(self.update_status_bar)
+        self.bar_timer.start(barUpdateInvervalMS)
+
+        self.__log__.debug("Hooking drop-down menu items to their respective functions")
         self.actionClear_Output.triggered.connect(self.clear_display)
         self.actionQuit.triggered.connect(self.close)
+        
+        PORTS          = self.SDevice.get_active_ports()
+        BAUD           = [300*2**i for i in range(7)] ; lastBinaryBAUD = BAUD[-1]
+        for i in range(1,7) : BAUD.append(lastBinaryBAUD*i)
 
-        #This should be cleaned up into a soft-coded for-loop eventually
-        self.BAUD300.triggered.connect   (lambda : self.SDevice.update_baud(    300))
-        self.BAUD1200.triggered.connect  (lambda : self.SDevice.update_baud(   1200))
-        self.BAUD2400.triggered.connect  (lambda : self.SDevice.update_baud(   2400))
-        self.BAUD4800.triggered.connect  (lambda : self.SDevice.update_baud(   4800))
-        self.BAUD9600.triggered.connect  (lambda : self.SDevice.update_baud(   9600))
-        self.BAUD19200.triggered.connect (lambda : self.SDevice.update_baud(  19200)) 
-        self.BAUD38400.triggered.connect (lambda : self.SDevice.update_baud(  38400))
-        self.BAUD57600.triggered.connect (lambda : self.SDevice.update_baud(  57600))
-        self.BAUD115200.triggered.connect(lambda : self.SDevice.update_baud( 115200))
+        _translate     = QtCore.QCoreApplication.translate
+        
+        self.BAUDItems = []
+        for rate in BAUD:
+            widget = QtWidgets.QAction(self)
+            label  = f"{rate}" 
+            self.BAUDItems.append(widget)
+            self.BAUDItems[-1].setObjectName(label)
+            self.menuBAUD.addAction(self.BAUDItems[-1])
+            self.BAUDItems[-1].setText(_translate("MainWindow", label))
+            self.BAUDItems[-1].triggered.connect\
+                 (lambda x,rate=rate : self.SDevice.update_baud(  rate ))
+
+        self.PORTItems = []
+        for port in PORTS:
+            widget = QtWidgets.QAction(self)
+            label  = f"{port}" 
+            self.PORTItems.append(widget)
+            self.PORTItems[-1].setObjectName(label)
+            self.menuPORT.addAction(self.PORTItems[-1])
+            self.PORTItems[-1].setText(_translate("MainWindow",label))
+            self.PORTItems[-1].triggered.connect\
+                (lambda x,port=port : self.SDevice.update_port(port.device))
+
+
+    def update_status_bar(self):
+        message = f'PORT:{self.serial_device.name} BAUD:{self.serial_device.baudrate}'
+        self.statusbar.showMessage(message)
 
     def update_display(self,line):
         self.serialOutput.append(line)
@@ -117,7 +145,12 @@ class MainWindow(QMainWindow, sw.Ui_MainWindow):
             self.__log__.debug("False alarm, nothing read :(")
 
     def check_messages(self):
-        lines = self.SDevice.poll_serial()
+        try    : 
+            lines = self.SDevice.poll_serial()
+        except : 
+            self.__log__.warning("Incorrect settings for serial comms used!!")
+            lines = []
+            
         if lines : 
             for line in lines:
                 self.__log__.debug(f"Found {line} on serial buffer")
