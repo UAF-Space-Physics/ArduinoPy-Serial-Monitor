@@ -8,8 +8,6 @@ from   PyQt5.QtWidgets import QApplication, QMainWindow
 from logg import Log
 
 
-
-
 class MainWindow(QMainWindow, sw.Ui_MainWindow):
     """
     Main window for the Python Arduino serial monitor
