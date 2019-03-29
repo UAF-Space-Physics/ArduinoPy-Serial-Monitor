@@ -24,8 +24,6 @@ class MainWindow(QMainWindow, sw.Ui_MainWindow):
     serialOutput : list
         Text that is displayed on the output window. 
 
-
-
     Methods
     -------
     update_display
@@ -41,8 +39,9 @@ class MainWindow(QMainWindow, sw.Ui_MainWindow):
         Check for messages on the serial buffer
 
     """
-    def __init__(self):
+    def __init__(self,max_message_legth=250):
         self.__log__         = Log().logger
+        self.__maxlen__      = max_message_legth
 
         self.__log__.debug("Initializing the Main Window")
         super(MainWindow,self).__init__()
@@ -62,6 +61,10 @@ class MainWindow(QMainWindow, sw.Ui_MainWindow):
         try        : from serial_comms import SDevice
         except     : self.SerialDeviceLib = None
         else       : self.SerialDeviceLib = SDevice
+
+        try        : import scipy
+        except     : self.scipy = None
+        else       : self.scipy = scipy
 
     def __set_hooks__(self,pollIntervalMS=150,barUpdateInvervalMS=500):
         self.__log__.debug("Setting up callback on return-key press for message line")
@@ -84,6 +87,7 @@ class MainWindow(QMainWindow, sw.Ui_MainWindow):
         self.actionQuit.triggered.connect(self.close)
         
         PORTS          = self.SDevice.get_active_ports()
+        
         BAUD           = [300*2**i for i in range(7)] ; lastBinaryBAUD = BAUD[-1]
         for i in range(1,7) : BAUD.append(lastBinaryBAUD*i)
 
@@ -136,7 +140,8 @@ class MainWindow(QMainWindow, sw.Ui_MainWindow):
 
         if len(message) : 
             self.__log__.debug(f"Message read was {message}. Sending it out")
-            self.SDevice.send_message(message)
+            #self.SDevice.send_message(message)
+            self.send_data(message,'text')
             self.__log__.debug("Done. Updating display now")
             self.update_display(message)
         else : 
@@ -154,7 +159,26 @@ class MainWindow(QMainWindow, sw.Ui_MainWindow):
                 self.__log__.debug(f"Found {line} on serial buffer")
                 self.update_display(line)
 
+    def send_data(self,data,file_name):
+        bdata        = list(map(ord,data))
+        total_chunks = self.scipy.ceil(len(bdata)/self.__maxlen__).astype(self.scipy.uint32)
+        unique_ID    = self.__get_unique_id__()
+        ftype        = self.__send_type__(file_name)
+        low          = total_chunks & 0x0000ff
+        med          = total_chunks & 0x00ff00
+        high         = total_chunks & 0xff0000
+        header       = f"{ftype}{unique_ID}{high}{med}{low}"
+        print(header)
+        #self.SDevice.send_message(header)
+        return 0
+    
+    def __send_type__(self,file_name):
+        if file_name == 'text' : return chr(0)
+        else                   : return chr(2)
 
+    def __get_unique_id__(self):
+        ranNum = 255*self.scipy.random.random()
+        return self.scipy.array(ranNum).astype(self.scipy.uint8)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
